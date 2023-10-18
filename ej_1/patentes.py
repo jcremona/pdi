@@ -8,7 +8,7 @@ import time
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='''
-    This script takes two data files with timestamps and associates them   
+    Horizontal and vertical deblurring
     ''')
     parser.add_argument('image_path', help='Path to image')
     args = parser.parse_args()
