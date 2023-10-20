@@ -1,6 +1,28 @@
 import cv2
 import numpy as np
 
+def custom_equalization(roi):
+    # Both implementations differ because cv2.equalizeHist implements:
+    # > cdf_m = np.ma.masked_equal(cdf,0) # Remove zeros
+    # if min != max then the minimum will be 0 and maximum will be 255
+    # > cdf_m = (cdf_m - cdf_m.min())*255/(cdf_m.max()-cdf_m.min()) 
+    # > cdf = np.ma.filled(cdf_m,0).astype('uint8')
+
+    # Local histogram
+    hist = cv2.calcHist([roi], [0], None, [256], [0, 256])
+
+    # Equalization
+    num_elements = roi.shape[0] * roi.shape[1]
+    hist_norm = hist / num_elements
+    cdf = hist_norm.cumsum()
+
+    eq_roi = (cdf[roi] * 255).astype(np.uint8)
+    
+    return eq_roi
+
+def opencv_equalization(roi):
+    return cv2.equalizeHist(roi)
+
 def local_histogram_equalization(image, M, N):
     
     rows, cols = image.shape[:2]
@@ -12,28 +34,8 @@ def local_histogram_equalization(image, M, N):
         for j in range(half_win_j, cols - half_win_j):
             # Define roi
             roi = image[i - half_win_i: i + half_win_i + 1, j - half_win_j: j + half_win_j + 1]
-
-            # Local histogram
-            hist = cv2.calcHist([roi], [0], None, [256], [0, 256])
-
-            # Equalization
-            num_elements = roi.shape[0] * roi.shape[1]
-            hist_norm = hist / num_elements
-            cdf = hist_norm.cumsum()
-
-            eq_roi = (cdf[roi] * 255).astype(np.uint8)            
-            print("----")
-            print(roi)
-            print(eq_roi)            
-            print(cv2.equalizeHist(roi))
-            
-            #print(cv2.calcHist([eq_roi], [0], None, [256], [0, 256]))
-            #print(cv2.calcHist([cv2.equalizeHist(roi)], [0], None, [256], [0, 256]))
-
+            eq_roi = opencv_equalization(roi)            
             result_image[i, j] = eq_roi[half_win_i, half_win_j]
-            iter +=1 
-            if iter == 200:
-                exit(-1)
 
     return result_image
 
@@ -52,6 +54,6 @@ if __name__ == "__main__":
     output_image = local_histogram_equalization(input_image, args.window_size[0], args.window_size[1])
 
     # Optional, remove salt&pepper noise (median filter)
-    #output_image = cv2.medianBlur(output_image, 3)
+    output_image = cv2.medianBlur(output_image, 3)
 
     cv2.imwrite('eq_img.jpg', output_image)
