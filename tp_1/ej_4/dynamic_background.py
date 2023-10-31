@@ -25,20 +25,32 @@ if __name__ == "__main__":
         h,w,c = frame.shape
         bg = background[:h,:w,:]
         green_channel = frame[:,:,1]
-        mask = (green_channel > 254)
-        result_image = np.zeros(frame.shape, dtype=np.uint8)
-        
+        mask_bool = (green_channel == 255)
+        mask = np.uint8(mask_bool)
+        mask *= 255
+        background_img = cv.bitwise_and(bg,bg,mask=mask)
+        mask_inv = cv.bitwise_not(mask)
+        person = cv.bitwise_and(frame,frame,mask=mask_inv)
+        #person = cv.GaussianBlur(person, (5,5),0, borderType = cv.BORDER_DEFAULT)
+        result_image = cv.add(person,background_img)
+        #print(frame[mask].shape)
+        #print(bg[:,:,0][mask].shape)
+        #print(cv.threshold(green_channel, 255, 255, cv.THRESH_BINARY+cv.THRESH_OTSU))
+        #blur = cv.GaussianBlur(mask*255, (0,0), sigmaX=5, sigmaY=5, borderType = cv.BORDER_DEFAULT)
+
         # how to filter using mask? I want to use mask to make a new image with
         # some pixels of the background image and some pixels of the current frame
+        #mask = cv.GaussianBlur(mask, (0,0), sigmaX=5, sigmaY=5, borderType = cv.BORDER_DEFAULT)
 
-        for i in range(3):
-            new_channel = np.zeros((h,w), dtype=np.uint8)
-            new_channel[mask,i] = bg[bg[:,:,i]==mask]
-            new_channel[np.logical_not(mask),i] = frame[np.logical_not(mask),i]
-            result_image[:,:,i] = new_channel
-        #cv.imwrite('g.png', im_th)
+        #for i in range(3):
+        #    new_channel = np.zeros((h,w), dtype=np.uint8)
+        #    new_channel[mask] = bg[:,:,i][mask]
+        #    new_channel[np.logical_not(mask)] = frame[:,:,i][np.logical_not(mask)]
+        #    result_image[:,:,i] = new_channel
         
-        cv.imshow('frame', frame)
+        
+        
+        cv.imshow('frame', result_image)
         #plt.hist(green.flatten(),256,[0,256], color = 'r')
         #plt.xlim([0,256])
         #plt.show()
