@@ -19,41 +19,36 @@ if __name__ == "__main__":
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-        # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        #cv.imshow('frame', frame[:,:,1])
-        #hist = cv.calcHist([frame[:,:,1]], [0], None, [256], [0, 256])
+
         h,w,c = frame.shape
         bg = background[:h,:w,:]
         green_channel = frame[:,:,1]
-        mask_bool = (green_channel == 255)
+        mask_bool = (green_channel != 255)
         mask = np.uint8(mask_bool)
-        mask *= 255
-        background_img = cv.bitwise_and(bg,bg,mask=mask)
+        mask *= 255        
         mask_inv = cv.bitwise_not(mask)
-        person = cv.bitwise_and(frame,frame,mask=mask_inv)
-        #person = cv.GaussianBlur(person, (5,5),0, borderType = cv.BORDER_DEFAULT)
-        result_image = cv.add(person,background_img)
-        #print(frame[mask].shape)
-        #print(bg[:,:,0][mask].shape)
-        #print(cv.threshold(green_channel, 255, 255, cv.THRESH_BINARY+cv.THRESH_OTSU))
-        #blur = cv.GaussianBlur(mask*255, (0,0), sigmaX=5, sigmaY=5, borderType = cv.BORDER_DEFAULT)
+        background_img = cv.bitwise_and(bg,bg,mask=mask_inv)
+        person = cv.bitwise_and(frame,frame,mask=mask)
 
-        # how to filter using mask? I want to use mask to make a new image with
-        # some pixels of the background image and some pixels of the current frame
-        #mask = cv.GaussianBlur(mask, (0,0), sigmaX=5, sigmaY=5, borderType = cv.BORDER_DEFAULT)
+        # Blur the walking man
+        blurred_person = cv.GaussianBlur(person, (61, 61), 0)
+        #sobel = cv.Sobel(src=mask, ddepth=cv.CV_8U, dx=1, dy=1, ksize=1)
+        #sobel = np.stack((sobel,)*3, axis=-1)
+        #canny = cv.Canny(image=mask, threshold1=0, threshold2=10)
+        #canny = np.stack((canny,)*3, axis=-1)
+        
+        # Find the contour
+        contours, hierarchy = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)        
 
-        #for i in range(3):
-        #    new_channel = np.zeros((h,w), dtype=np.uint8)
-        #    new_channel[mask] = bg[:,:,i][mask]
-        #    new_channel[np.logical_not(mask)] = frame[:,:,i][np.logical_not(mask)]
-        #    result_image[:,:,i] = new_channel
+        # Obtain a contour mask
+        contour_mask = np.zeros(frame.shape, np.uint8)
+        cv.drawContours(contour_mask, contours, -1, (255,255,255),5)        
         
+        # Replace the contour of the person with the blurred contour (using the contour mask)
+        output = np.where(contour_mask==np.array([255, 255, 255]), blurred_person, person)
         
-        
+        result_image = cv.add(output, background_img)
         cv.imshow('frame', result_image)
-        #plt.hist(green.flatten(),256,[0,256], color = 'r')
-        #plt.xlim([0,256])
-        #plt.show()
 
         if cv.waitKey(10) == ord('q'):
             break   
