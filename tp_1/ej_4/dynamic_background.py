@@ -11,12 +11,13 @@ if __name__ == "__main__":
     parser.add_argument('video_background', help='Path to background video')
     #parser.add_argument('--window_size', type=int, nargs=2, help='Angle for motion kernel (in degrees)')
     args = parser.parse_args()    
-    cap = cv.VideoCapture(args.video_path)
-    background = cv.imread(args.video_background)
-    while cap.isOpened():
-        ret, frame = cap.read()
+    video_person = cv.VideoCapture(args.video_path)
+    video_background = cv.VideoCapture(args.video_background)
+    while video_person.isOpened():
+        ret_p, frame = video_person.read()
+        ret_b, background = video_background.read()
         # if frame is read correctly ret is True
-        if not ret:
+        if not ret_p:
             print("Can't receive frame (stream end?). Exiting ...")
             break
 
@@ -61,5 +62,6 @@ if __name__ == "__main__":
 
         if cv.waitKey(10) == ord('q'):
             break   
-    cap.release()
+    video_person.release()
+    video_background.release()
     cv.destroyAllWindows()
