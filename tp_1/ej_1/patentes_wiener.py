@@ -50,7 +50,7 @@ if __name__ == "__main__":
     ''')
     parser.add_argument('image_path', help='Path to image')
     parser.add_argument('--angle', type=int, help='Angle for motion kernel (in degrees)')
-    parser.add_argument('--d', type=int, help='Distance for motion kernel (in degrees)')
+    parser.add_argument('--d', type=int, help='Distance for motion kernel (in pixels)')
     parser.add_argument('--nsr', type=float, help='Noise-signal ration (approximation with a constant)')
     args = parser.parse_args()
 
