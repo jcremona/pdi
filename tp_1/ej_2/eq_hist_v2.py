@@ -50,6 +50,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     input_image = cv2.imread(args.image_path, 0)     
+    input_image = cv2.GaussianBlur(input_image, (3,3),0)     
 
     # Set background to white
     mask = (input_image > 200)
@@ -58,8 +59,8 @@ if __name__ == "__main__":
     output_image = local_histogram_equalization(input_image, args.window_size[0], args.window_size[1])
 
     # Remove salt&pepper noise (median filter)
-    output_image = cv2.medianBlur(output_image, 3)
-    _,output_image = cv2.threshold(output_image, 75, 255, cv2.THRESH_BINARY)
+    #output_image = cv2.medianBlur(output_image, 3)
+    _,output_image = cv2.threshold(output_image, 187, 255, cv2.THRESH_BINARY)
     cv2.imwrite('eq_img.jpg', output_image)
     cv2.imshow('Fixed', output_image)
             
