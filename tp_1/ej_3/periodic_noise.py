@@ -16,8 +16,7 @@ if __name__ == "__main__":
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
     result_image = np.zeros(image.shape, dtype=np.uint8)
-    print(result_image.dtype)
-    print(result_image.shape)
+    
     for i in range(3):
         rgb_channel = image[:, :, i]
         F = np.fft.fft2(rgb_channel)
