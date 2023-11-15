@@ -42,8 +42,11 @@ if __name__ == "__main__":
         mask_inv = cv.bitwise_not(mask)
 
         # We finally replace the green background with a new video frame
+        # Make place for the person in the new background
         background_img = cv.bitwise_and(bg,bg,mask=mask_inv)
+        # We obtain the person from the original frame
         person = cv.bitwise_and(frame,frame,mask=mask)
+        # We paste both the person and the new background
         result_image = cv.add(person, background_img)
         
         cv.imshow('frame',result_image)     
