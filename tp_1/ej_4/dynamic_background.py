@@ -9,7 +9,7 @@ if __name__ == "__main__":
     ''')
     parser.add_argument('video_path', help='Path to original video')
     parser.add_argument('video_background', help='Path to background video')
-    #parser.add_argument('--window_size', type=int, nargs=2, help='Angle for motion kernel (in degrees)')
+    
     args = parser.parse_args()    
     video_person = cv.VideoCapture(args.video_path)
     video_background = cv.VideoCapture(args.video_background)
@@ -23,44 +23,32 @@ if __name__ == "__main__":
 
         h,w,c = frame.shape
         bg = background[:h,:w,:]
-        # green_channel = frame[:,:,1]
-        # mask_bool = (green_channel != 255)
-        # mask = np.uint8(mask_bool)
-        # mask *= 255        
-        green_blue_ratio = (frame[:,:,1] / (frame[:,:,0]+0.1)).astype('uint8')
-        green_red_ratio = (frame[:,:,1] / (frame[:,:,2]+0.1)).astype('uint8')
-        # FIXME so many values are near 1 because 255 divided by a similar number is near 1 
-        # Could be solved applying a log to the divisor? or something similar
-        _,thresh1 = cv.threshold(green_blue_ratio,1,255,cv.THRESH_BINARY_INV)
-        _,thresh2 = cv.threshold(green_red_ratio,1,255,cv.THRESH_BINARY_INV)
-        # FIXME perhaps it could be improved using the former mask ((green_channel != 255))
+
+        # Build an appropiate mask to cut just the person
+        # We discard the pixels where the difference between 
+        # green channel and blue channel (and red channel) is too large
+        green_blue_diff = cv.subtract(frame[:,:,1],frame[:,:,0])#(frame[:,:,1] / np.log(frame[:,:,0]+0.1)).astype('uint8')
+        green_red_diff = cv.subtract(frame[:,:,1],frame[:,:,2])#(frame[:,:,1] / np.log(frame[:,:,2]+0.1)).astype('uint8')        
+        _,thresh1 = cv.threshold(green_blue_diff,14,255,cv.THRESH_BINARY_INV)
+        _,thresh2 = cv.threshold(green_red_diff,14,255,cv.THRESH_BINARY_INV)
+
+        # add both masks
         mask = cv.add(thresh1,thresh2)
-        #mask = cv.subtract(mask, cv.bitwise_not(cm))        
+        
+        # Smooth the mask
+        mask = cv.medianBlur(mask, 3)
+
+        # The inverse mask will be used over the new background
         mask_inv = cv.bitwise_not(mask)
+
+        # We finally replace the green background with a new video frame
         background_img = cv.bitwise_and(bg,bg,mask=mask_inv)
         person = cv.bitwise_and(frame,frame,mask=mask)
-
-        # Blur the walking man
-        blurred_person = cv.GaussianBlur(person, (3, 3), 0)
-        #sobel = cv.Sobel(src=mask, ddepth=cv.CV_8U, dx=1, dy=1, ksize=1)
-        #sobel = np.stack((sobel,)*3, axis=-1)
-        #canny = cv.Canny(image=mask, threshold1=0, threshold2=10)
-        #canny = np.stack((canny,)*3, axis=-1)
+        result_image = cv.add(person, background_img)
         
-        # Find the contour
-        contours, hierarchy = cv.findContours(mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-        # Obtain a contour mask
-        contour_mask = np.zeros(frame.shape, np.uint8)
-        cv.drawContours(contour_mask, contours, -1, (255,255,255),5)        
-
-        # Replace the contour of the person with the blurred contour (using the contour mask)
-        output = np.where(contour_mask==np.array([255, 255, 255]), blurred_person, person)
-
-        result_image = cv.add(output, background_img)
         cv.imshow('frame',result_image)     
-
-        if cv.waitKey(10) == ord('q'):
+    
+        if cv.waitKey(15) == ord('q'):
             break   
     video_person.release()
     video_background.release()
